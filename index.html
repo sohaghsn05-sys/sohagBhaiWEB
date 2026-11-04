@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sohag Bhai MBBS Classes — Making the Hardest Journey a Little Easier</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind configuration for custom brand colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6C3CE9',
+                        primaryHover: '#5B30D0',
+                        navy: '#172554',
+                        lightBg: '#F8F7FC',
+                        surface: '#FFFFFF'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Admin Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8F7FC; color: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-primary selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Confirmation Modal Container -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-primary text-xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 id="confirm-title" class="text-lg font-bold text-navy">Are you sure?</h3>
+                    <p id="confirm-desc" class="text-sm text-slate-500">This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="confirm-cancel-btn" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Cancel</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primaryHover rounded-xl transition shadow-lg shadow-primary/30">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="app" class="flex-1 flex flex-col">
+        <!-- Dynamically rendered views will mount here -->
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION CORE -->
+    <script>
+        /* ==========================================
+           1. INITIAL MOCK DATA & LOCALSTORAGE SETUP
+           ========================================== */
+        const INITIAL_STATE = {
+            currentUser: null, // { id, name, email, role: 'student'|'admin', college, batch, academicYear }
+            activeView: 'home', // 'home', 'free-classes', 'premium-courses', 'examination', 'about', 'contact', 'login', 'register', 'student-dashboard', 'admin-dashboard', 'course-player', 'exam-runner'
+            activeTab: 'overview', // Sub-tab for dashboards
+            selectedCourseId: null,
+            selectedExamId: null,
+            
+            // Database stores
+            users: [
+                { id: 'u1', name: 'Dr. Sohag Bhai', email: 'sohag@mbbs.com', role: 'admin', college: 'Dhaka Medical College', batch: 'K-70', academicYear: 'Final Year' },
+                { id: 'u2', name: 'Rahim Ahmed', email: 'student@mbbs.com', role: 'student', college: 'Sir Salimullah Medical College', batch: 'K-75', academicYear: '3rd Year' },
+                { id: 'u3', name: 'Nusrat Jahan', email: 'nusrat@mbbs.com', role: 'student', college: 'Mymensingh Medical College', batch: 'K-74', academicYear: '4th Year' }
+            ],
+            courses: [
+                {
+                    id: 'c1',
+                    title: 'Mastering Clinical Anatomy: Upper & Lower Limbs',
+                    category: 'Anatomy',
+                    type: 'free',
+                    price: 0,
+                    discountPrice: 0,
+                    thumbnail: 'https://placehold.co/600x400/6C3CE9/FFFFFF?text=Clinical+Anatomy',
+                    description: 'High-yield clinical anatomy lectures focused on high-board exam retention, nerve lesions, and surface landmarks.',
+                    isFeatured: true,
+                    isPublished: true,
+                    chapters: [
+                        {
+                            id: 'ch1',
+                            title: 'Module 1: Brachial Plexus Lesions',
+                            topics: [
+                                { id: 't1', title: 'Erb-Duchenne & Klumpke Palsy', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '18 mins', pdfName: 'Brachial_Plexus_Notes.pdf' },
+                                { id: 't2', title: 'High-Yield Clinical Pearls', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '22 mins', pdfName: 'Anatomy_Review.pdf' }
+                            ]
+                        }
+                    ],
+                    announcements: [
+                        { id: 'a1', title: 'Welcome to Anatomy Mastery!', date: '2026-06-01', text: 'Please review the brachial plexus diagrams before starting Module 1.' }
+                    ]
+                },
+                {
+                    id: 'c2',
+                    title: 'Complete Physiology for Professional MBBS Part-1',
+                    category: 'Physiology',
+                    type: 'premium',
+                    price: 2500,
+                    discountPrice: 1800,
+                    thumbnail: 'https://placehold.co/600x400/172554/FFFFFF?text=Medical+Physiology',
+                    description: 'Comprehensive cardiovascular, renal, and neurophysiology lectures tailored for FCPS and professional board exams.',
+                    isFeatured: true,
+                    isPublished: true,
+                    chapters: [
+                        {
+                            id: 'ch2',
+                            title: 'Module 1: Renal Hemodynamics & GFR Regulation',
+                            topics: [
+                                { id: 't3', title: 'Glomerular Filtration Mechanics', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '35 mins', pdfName: 'Renal_Physiology_Guyton.pdf' },
+                                { id: 't4', title: 'Tubular Reabsorption & Countercurrent Multiplier', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '40 mins', pdfName: 'Nephron_HighYield.pdf' }
+                            ]
+                        },
+                        {
+                            id: 'ch3',
+                            title: 'Module 2: Cardiac Cycle & ECG Interpretation',
+                            topics: [
+                                { id: 't5', title: 'Wiggers Diagram Breakdown', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '45 mins', pdfName: 'Cardiac_Cycle.pdf' }
+                            ]
+                        }
+                    ],
+                    announcements: [
+                        { id: 'a2', title: 'Guyton Chapter 26 assignment uploaded', date: '2026-06-03', text: 'Solve the practice questions at the end of the chapter notes.' }
+                    ]
+                },
+                {
+                    id: 'c3',
+                    title: 'Pathology Masterclass: General & Systemic Pathology',
+                    category: 'Pathology',
+                    type: 'premium',
+                    price: 3000,
+                    discountPrice: 2200,
+                    thumbnail: 'https://placehold.co/600x400/6C3CE9/FFFFFF?text=Robbins+Pathology',
+                    description: 'Master Robbins & Cotran with high-yield slide walk-throughs, pathogenesis flowcharts, and clinical correlation.',
+                    isFeatured: true,
+                    isPublished: true,
+                    chapters: [
+                        {
+                            id: 'ch4',
+                            title: 'Module 1: Cellular Adaptation & Injury',
+                            topics: [
+                                { id: 't6', title: 'Necrosis vs Apoptosis High Yield Differences', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '30 mins', pdfName: 'Robbins_Ch1.pdf' }
+                            ]
+                        }
+                    ],
+                    announcements: []
+                },
+                {
+                    id: 'c4',
+                    title: 'Pharmacology Simplified: Autonomic & Cardiovascular Drugs',
+                    category: 'Pharmacology',
+                    type: 'free',
+                    price: 0,
+                    discountPrice: 0,
+                    thumbnail: 'https://placehold.co/600x400/172554/FFFFFF?text=Pharmacology+Rx',
+                    description: 'Mnemonic-driven pharmacology series covering autonomic nervous system agonists, antagonists, and anti-hypertensives.',
+                    isFeatured: false,
+                    isPublished: true,
+                    chapters: [
+                        {
+                            id: 'ch5',
+                            title: 'Module 1: Cholinergic & Adrenergic Receptors',
+                            topics: [
+                                { id: 't7', title: 'Sympathomimetics & Receptor Selectivity', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '25 mins', pdfName: 'Lippincott_Pharma.pdf' }
+                            ]
+                        }
+                    ],
+                    announcements: []
+                }
+            ],
+            enrollments: [
+                { id: 'en1', userId: 'u2', courseId: 'c1', status: 'approved', enrolledAt: '2026-06-01' },
+                { id: 'en2', userId: 'u2', courseId: 'c2', status: 'approved', enrolledAt: '2026-06-02' }
+            ],
+            payments: [
+                { id: 'pay1', userId: 'u2', courseId: 'c2', courseName: 'Complete Physiology for Professional MBBS Part-1', method: 'bKash', senderNumber: '01711223344', trxId: 'TRX99882233', date: '2026-06-02', coupon: 'SOBUG10', amount: 1620, status: 'approved' },
+                { id: 'pay2', userId: 'u3', courseId: 'c3', courseName: 'Pathology Masterclass: General & Systemic Pathology', method: 'Nagad', senderNumber: '01899887766', trxId: 'TRX44556677', date: '2026-06-04', coupon: '', amount: 3000, status: 'pending' }
+            ],
+            coupons: [
+                { id: 'cp1', code: 'SOBUG10', discountType: 'percentage', discountValue: 10, expiryDate: '2026-12-31', usageLimit: 100, usedCount: 15, enabled: true },
+                { id: 'cp2', code: 'MBBS500', discountType: 'fixed', discountValue: 500, expiryDate: '2026-08-30', usageLimit: 50, usedCount: 8, enabled: true }
+            ],
+            examinations: [
+                {
+                    id: 'ex1',
+                    title: 'First Professional MBBS Mock Test: Anatomy & Physiology',
+                    durationMinutes: 15,
+                    totalMarks: 50,
+                    negativeMarking: 0.25,
+                    questions: [
+                        { id: 'q1', text: 'Which nerve is most vulnerable in fracture of the surgical neck of the humerus?', options: ['Axillary nerve', 'Radial nerve', 'Ulnar nerve', 'Musculocutaneous nerve'], correctIndex: 0, marks: 10 },
+                        { id: 'q2', text: 'Normal GFR in a healthy 70kg adult male is approximately:', options: ['60 ml/min', '125 ml/min', '200 ml/min', '250 ml/min'], correctIndex: 1, marks: 10 },
+                        { id: 'q3', text: 'Which of the following is an irreversible cellular injury marker?', options: ['Cell swelling', 'Ribosomal detachment', 'Pyknosis and karyolysis', 'Glycogen depletion'], correctIndex: 2, marks: 10 },
+                        { id: 'q4', text: 'Primary neurotransmitter in the sympathetic postganglionic terminals supplying sweat glands is:', options: ['Acetylcholine', 'Norepinephrine', 'Epinephrine', 'Dopamine'], correctIndex: 0, marks: 10 },
+                        { id: 'q5', text: 'Which heart sound is associated with rapid ventricular filling in early diastole?', options: ['S1', 'S2', 'S3', 'S4'], correctIndex: 2, marks: 10 }
+                    ]
+                }
+            ],
+            examResults: [
+                { id: 'er1', userId: 'u2', examId: 'ex1', score: 40, totalMarks: 50, percentage: 80, date: '2026-06-03' }
+            ],
+            announcements: [
+                { id: 'an1', title: 'Final Professional Exam Dates Announced!', date: '2026-06-04', text: 'BCPS & BMDC have released exam notices. Double down on your clinical cases!' },
+                { id: 'an2', title: 'New Pharmacology Lecture Series Added', date: '2026-06-02', text: 'Autonomic nervous system modules are now live for free students.' }
+            ],
+            notifications: [
+                { id: 'nf1', userId: 'u2', title: 'Payment Approved!', message: 'Your payment for Complete Physiology has been verified. Course unlocked.', date: '2026-06-02', read: false }
+            ],
+            categories: ['Anatomy', 'Physiology', 'Pathology', 'Pharmacology', 'Surgery', 'Medicine', 'Pediatrics', 'Gynecology'],
+            siteSettings: {
+                platformName: 'Sohag Bhai MBBS Classes',
+                tagline: 'Making the Hardest Journey a Little Easier.',
+                bkashNumber: '01938384761',
+                nagadNumber: '01834092975'
+            }
+        };
+
+        // Load state from localStorage or initialize
+        let state = JSON.parse(localStorage.getItem('sohag_mbbs_lms_state')) || INITIAL_STATE;
+
+        function saveState() {
+            localStorage.setItem('sohag_mbbs_lms_state', JSON.stringify(state));
+        }
+
+        function resetDemoData() {
+            state = JSON.parse(JSON.stringify(INITIAL_STATE));
+            saveState();
+            showToast('Demo data successfully reset to default!', 'success');
+            renderApp();
+        }
+
+        /* ==========================================
+           2. TOAST & CONFIRMATION HELPERS
+           ========================================== */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const bgCol = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-navy';
+            const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
+            
+            toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl text-white shadow-xl ${bgCol} animate-fade-in font-medium text-sm`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function showConfirm(title, description, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            const titleEl = document.getElementById('confirm-title');
+            const descEl = document.getElementById('confirm-desc');
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+            titleEl.textContent = title;
+            descEl.textContent = description;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const handleOk = () => {
+                cleanup();
+                onConfirm();
+            };
+            const handleCancel = () => {
+                cleanup();
+            };
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                okBtn.removeEventListener('click', handleOk);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            okBtn.addEventListener('click', handleOk);
+            cancelBtn.addEventListener('click', handleCancel);
+        }
+
+        /* ==========================================
+           3. NAVIGATION & ROUTING
+           ========================================== */
+        function navigate(view, extra = {}) {
+            state.activeView = view;
+            if (extra.courseId) state.selectedCourseId = extra.courseId;
+            if (extra.examId) state.selectedExamId = extra.examId;
+            if (extra.tab) state.activeTab = extra.tab;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderApp();
+        }
+
+        /* ==========================================
+           4. RENDER ENGINE & VIEWS
+           ========================================== */
+        function renderApp() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+
+            switch (state.activeView) {
+                case 'home':
+                    app.innerHTML = renderNavbar() + renderHomeView() + renderFooter();
+                    break;
+                case 'free-classes':
+                    app.innerHTML = renderNavbar() + renderFreeClassesView() + renderFooter();
+                    break;
+                case 'premium-courses':
+                    app.innerHTML = renderNavbar() + renderPremiumCoursesView() + renderFooter();
+                    break;
+                case 'examination':
+                    app.innerHTML = renderNavbar() + renderExaminationView() + renderFooter();
+                    break;
+                case 'about':
+                    app.innerHTML = renderNavbar() + renderAboutView() + renderFooter();
+                    break;
+                case 'contact':
+                    app.innerHTML = renderNavbar() + renderContactView() + renderFooter();
+                    break;
+                case 'login':
+                    app.innerHTML = renderLoginView();
+                    break;
+                case 'register':
+                    app.innerHTML = renderRegisterView();
+                    break;
+                case 'admin-login':
+                    app.innerHTML = renderAdminLoginView();
+                    break;
+                case 'student-dashboard':
+                    app.innerHTML = renderStudentDashboard();
+                    break;
+                case 'admin-dashboard':
+                    app.innerHTML = renderAdminDashboard();
+                    break;
+                case 'course-player':
+                    app.innerHTML = renderCoursePlayerView();
+                    break;
+                case 'exam-runner':
+                    app.innerHTML = renderExamRunnerView();
+                    break;
+                default:
+                    app.innerHTML = renderNavbar() + renderHomeView() + renderFooter();
+            }
+            attachGlobalEventListeners();
+        }
+
+        /* --- COMMON NAVBAR --- */
+        function renderNavbar() {
+            const user = state.currentUser;
+            return `
+            <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                    <!-- Brand -->
+                    <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('home')">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-primary/30">
+                            <i class="fa-solid fa-stethoscope"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-navy leading-tight">Sohag Bhai MBBS</h1>
+                            <p class="text-xs text-slate-500 font-medium">Making the Hardest Journey a Little Easier</p>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Nav Links -->
+                    <nav class="hidden lg:flex items-center gap-8 font-medium text-sm text-slate-600">
+                        <a href="#" onclick="navigate('home'); return false;" class="${state.activeView==='home'?'text-primary font-semibold':'hover:text-primary transition'}">Home</a>
+                        <a href="#" onclick="navigate('free-classes'); return false;" class="${state.activeView==='free-classes'?'text-primary font-semibold':'hover:text-primary transition'}">Free Classes</a>
+                        <a href="#" onclick="navigate('premium-courses'); return false;" class="${state.activeView==='premium-courses'?'text-primary font-semibold':'hover:text-primary transition'}">Premium Courses</a>
+                        <a href="#" onclick="navigate('examination'); return false;" class="${state.activeView==='examination'?'text-primary font-semibold':'hover:text-primary transition'}">Examination</a>
+                        <a href="#" onclick="navigate('about'); return false;" class="${state.activeView==='about'?'text-primary font-semibold':'hover:text-primary transition'}">About Us</a>
+                        <a href="#" onclick="navigate('contact'); return false;" class="${state.activeView==='contact'?'text-primary font-semibold':'hover:text-primary transition'}">Contact Us</a>
+                    </nav>
+
+                    <!-- Auth Actions / User Profile -->
+                    <div class="hidden lg:flex items-center gap-4">
+                        ${user ? `
+                            <div class="flex items-center gap-3 cursor-pointer bg-slate-100 px-4 py-2 rounded-2xl border border-slate-200" onclick="navigate('${user.role==='admin'?'admin-dashboard':'student-dashboard'}')">
+                                <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">
+                                    ${user.name.charAt(0)}
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-xs font-bold text-navy">${user.name}</p>
+                                    <p class="text-[10px] text-slate-500 capitalize">${user.role}</p>
+                                </div>
+                            </div>
+                            <button onclick="handleLogout()" class="text-slate-500 hover:text-rose-600 text-sm font-medium px-3 py-2 rounded-xl transition">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </button>
+                        ` : `
+                            <button onclick="navigate('login')" class="px-5 py-2.5 text-sm font-semibold text-primary bg-purple-50 hover:bg-purple-100 rounded-xl transition">Student Login</button>
+                            <button onclick="navigate('register')" class="px-5 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primaryHover rounded-xl shadow-lg shadow-primary/30 transition">Register</button>
+                        `}
+                    </div>
+
+                    <!-- Mobile Menu Button -->
+                    <button id="mobile-menu-btn" class="lg:hidden text-slate-700 text-2xl p-2 rounded-xl hover:bg-slate-100 transition">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile Dropdown Menu -->
+                <div id="mobile-menu" class="hidden lg:hidden bg-white border-b border-slate-200 px-6 py-4 flex flex-col gap-4">
+                    <a href="#" onclick="navigate('home'); return false;" class="font-medium text-slate-700">Home</a>
+                    <a href="#" onclick="navigate('free-classes'); return false;" class="font-medium text-slate-700">Free Classes</a>
+                    <a href="#" onclick="navigate('premium-courses'); return false;" class="font-medium text-slate-700">Premium Courses</a>
+                    <a href="#" onclick="navigate('examination'); return false;" class="font-medium text-slate-700">Examination</a>
+                    <a href="#" onclick="navigate('about'); return false;" class="font-medium text-slate-700">About Us</a>
+                    <a href="#" onclick="navigate('contact'); return false;" class="font-medium text-slate-700">Contact Us</a>
+                    <hr class="border-slate-100">
+                    ${user ? `
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-navy">${user.name} (${user.role})</span>
+                            <button onclick="navigate('${user.role==='admin'?'admin-dashboard':'student-dashboard'}')" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg">Dashboard</button>
+                        </div>
+                        <button onclick="handleLogout()" class="text-left text-rose-600 font-medium text-sm">Logout</button>
+                    ` : `
+                        <div class="flex gap-3">
+                            <button onclick="navigate('login')" class="flex-1 py-2.5 text-sm font-semibold text-primary bg-purple-50 rounded-xl">Login</button>
+                            <button onclick="navigate('register')" class="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-xl">Register</button>
+                        </div>
+                    `}
+                </div>
+            </header>`;
+        }
+
+        /* --- FOOTER --- */
+        function renderFooter() {
+            return `
+            <footer class="bg-navy text-slate-300 pt-16 pb-12 mt-auto">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white text-xl">
+                                <i class="fa-solid fa-stethoscope"></i>
+                            </div>
+                            <span class="text-white font-bold text-lg">Sohag Bhai MBBS</span>
+                        </div>
+                        <p class="text-sm text-slate-400 leading-relaxed mb-4">Making the Hardest Journey a Little Easier. Premium medical education platform curated for future doctors and medical students.</p>
+                        <div class="flex gap-3">
+                            <a href="#" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-primary text-white flex items-center justify-center transition"><i class="fa-brands fa-facebook-f"></i></a>
+                            <a href="#" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-primary text-white flex items-center justify-center transition"><i class="fa-brands fa-youtube"></i></a>
+                            <a href="#" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-primary text-white flex items-center justify-center transition"><i class="fa-brands fa-telegram"></i></a>
+                            <a href="#" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-primary text-white flex items-center justify-center transition"><i class="fa-brands fa-whatsapp"></i></a>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Quick Links</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li><a href="#" onclick="navigate('home'); return false;" class="hover:text-white transition">Home</a></li>
+                            <li><a href="#" onclick="navigate('free-classes'); return false;" class="hover:text-white transition">Free Classes</a></li>
+                            <li><a href="#" onclick="navigate('premium-courses'); return false;" class="hover:text-white transition">Premium Courses</a></li>
+                            <li><a href="#" onclick="navigate('examination'); return false;" class="hover:text-white transition">Examinations</a></li>
+                            <li><a href="#" onclick="navigate('about'); return false;" class="hover:text-white transition">About Us</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Popular Subjects</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li><a href="#" onclick="navigate('premium-courses'); return false;" class="hover:text-white transition">Clinical Anatomy</a></li>
+                            <li><a href="#" onclick="navigate('premium-courses'); return false;" class="hover:text-white transition">Medical Physiology</a></li>
+                            <li><a href="#" onclick="navigate('premium-courses'); return false;" class="hover:text-white transition">Robbins Pathology</a></li>
+                            <li><a href="#" onclick="navigate('premium-courses'); return false;" class="hover:text-white transition">Pharmacology Rx</a></li>
+                            <li><a href="#" onclick="navigate('premium-courses'); return false;" class="hover:text-white transition">Surgery & Medicine</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Admin Access</h4>
+                        <p class="text-sm text-slate-400 mb-4">Authorized medical faculty login portal for course and student management.</p>
+                        <button onclick="navigate('admin-login')" class="px-4 py-2.5 bg-slate-800 hover:bg-primary text-white text-xs font-semibold rounded-xl transition border border-slate-700">
+                            <i class="fa-solid fa-lock mr-2"></i> Admin Portal
+                        </button>
+                    </div>
+                </div>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
+                    <p>&copy; 2026 Sohag Bhai MBBS Classes. All rights reserved.</p>
+                    <p class="mt-2 sm:mt-0">Designed for Aspiring Doctors & Medical Professionals.</p>
+                </div>
+            </footer>`;
+        }
+
+        /* --- HOME VIEW --- */
+        function renderHomeView() {
+            const stats = {
+                students: state.users.filter(u => u.role === 'student').length + 1420,
+                courses: state.courses.length + 18,
+                views: state.courses.reduce((acc, c) => acc + c.chapters.length * 240, 12500)
+            };
+            const featuredCourses = state.courses.filter(c => c.isFeatured && c.isPublished);
+            const freeCourses = state.courses.filter(c => c.type === 'free' && c.isPublished);
+            const announcements = state.announcements;
+
+            return `
+            <!-- Hero Section -->
+            <section class="relative bg-gradient-to-b from-purple-900 via-navy to-navy text-white py-24 px-4 overflow-hidden">
+                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#6C3CE9_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+                    <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                        <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full text-purple-300 text-xs font-semibold uppercase tracking-wider">
+                            <i class="fa-solid fa-award text-amber-400"></i> Premium Medical Education LMS
+                        </div>
+                        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight">
+                            Making the Hardest Journey a <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Little Easier.</span>
+                        </h1>
+                        <p class="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto lg:mx-0">
+                            Master Clinical Anatomy, Physiology, Pathology, and Professional MBBS Board exams with high-yield video lectures, structured notes, and realistic mock tests curated by Dr. Sohag Bhai.
+                        </p>
+                        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                            <button onclick="navigate('premium-courses')" class="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primaryHover text-white font-bold rounded-2xl shadow-xl shadow-primary/40 transition">
+                                Explore Premium Courses <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                            <button onclick="navigate('free-classes')" class="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl backdrop-blur-md transition border border-white/20">
+                                Watch Free Classes
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-5 flex justify-center">
+                        <div class="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-2xl relative">
+                            <div class="absolute -top-4 -right-4 bg-amber-400 text-navy font-bold text-xs px-4 py-2 rounded-2xl shadow-lg">
+                                <i class="fa-solid fa-star mr-1"></i> 4.9/5 Rating
+                            </div>
+                            <div class="space-y-4">
+                                <div class="h-48 rounded-2xl bg-cover bg-center overflow-hidden relative shadow-inner" style="background-image: url('https://placehold.co/600x400/6C3CE9/FFFFFF?text=MBBS+Clinical+Masterclass');">
+                                    <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                        <div class="w-14 h-14 rounded-full bg-primary/90 text-white flex items-center justify-center text-xl shadow-lg cursor-pointer hover:scale-110 transition">
+                                            <i class="fa-solid fa-play ml-1"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h3 class="font-bold text-lg text-white">MBBS Part-1 Clinical Prep</h3>
+                                <p class="text-xs text-slate-300">Join over 1,400+ medical students mastering high-yield concepts daily.</p>
+                                <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/10">
+                                    <span><i class="fa-solid fa-book-open mr-1 text-purple-400"></i> 18 Modules</span>
+                                    <span><i class="fa-solid fa-users mr-1 text-purple-400"></i> 1,420 Enrolled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics Bar -->
+            <section class="bg-white border-b border-slate-200 py-8 shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                    <div>
+                        <p class="text-3xl font-extrabold text-navy">${stats.students}+</p>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Enrolled Medical Students</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-extrabold text-primary">${stats.courses}</p>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Curated Courses</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-extrabold text-navy">99.4%</p>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Board Exam Pass Rate</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-extrabold text-primary">${stats.views.toLocaleString()}+</p>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Class Video Views</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Latest Announcements Ticker -->
+            ${announcements.length > 0 ? `
+            <div class="bg-purple-900 text-white py-3 px-4">
+                <div class="max-w-7xl mx-auto flex items-center gap-3 overflow-hidden text-sm">
+                    <span class="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shrink-0">Announcement</span>
+                    <p class="truncate font-medium">${announcements[0].title}: ${announcements[0].text}</p>
+                </div>
+            </div>` : ''}
+
+            <!-- Popular Subjects Section -->
+            <section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-navy">Explore Popular MBBS Subjects</h2>
+                        <p class="text-sm text-slate-500">Core pre-clinical and clinical subjects for professional exams</p>
+                    </div>
+                    <button onclick="navigate('premium-courses')" class="text-sm font-semibold text-primary hover:underline">View All Courses <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    ${['Anatomy', 'Physiology', 'Pathology', 'Pharmacology', 'Surgery', 'Medicine'].map(subj => `
+                        <div onclick="navigate('premium-courses')" class="bg-white p-6 rounded-2xl border border-slate-200 text-center hover:border-primary hover:shadow-lg transition cursor-pointer group">
+                            <div class="w-14 h-14 rounded-2xl bg-purple-50 group-hover:bg-primary text-primary group-hover:text-white flex items-center justify-center mx-auto text-2xl transition mb-3">
+                                <i class="fa-solid fa-book-medical"></i>
+                            </div>
+                            <h4 class="font-bold text-navy text-sm">${subj}</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">High-Yield Modules</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </section>
+
+            <!-- Featured Courses Section -->
+            <section class="py-16 bg-slate-100/70 border-y border-slate-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-navy">Featured Premium Courses</h2>
+                            <p class="text-sm text-slate-500">Hand-crafted masterclasses for professional MBBS examinations</p>
+                        </div>
+                        <button onclick="navigate('premium-courses')" class="text-sm font-semibold text-primary hover:underline">Browse All <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        ${featuredCourses.map(course => renderCourseCard(course)).join('')}
+                    </div>
+                </div>
+            </section>
+
+            <!-- Free Classes Section -->
+            <section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-navy">Free MBBS Demo Classes</h2>
+                        <p class="text-sm text-slate-500">Start learning right now with zero payment required</p>
+                    </div>
+                    <button onclick="navigate('free-classes')" class="text-sm font-semibold text-primary hover:underline">View All Free Classes <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${freeCourses.map(course => renderCourseCard(course)).join('')}
+                </div>
+            </section>
+
+            <!-- Testimonials -->
+            <section class="py-16 bg-navy text-white">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 class="text-2xl font-bold mb-2">What Medical Students Say</h2>
+                    <p class="text-sm text-slate-400 mb-12">Trusted by students across top medical colleges in Bangladesh and beyond</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                        <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                            <div class="flex items-center gap-1 text-amber-400 text-sm mb-3">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="text-sm text-slate-300 mb-4">"Sohag Bhai's clinical anatomy breakdown made brachial plexus lesions so intuitive. Passed my Prof exam with honors!"</p>
+                            <p class="text-xs font-bold text-white">— Dr. Fahim Faisal, Dhaka Medical College</p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                            <div class="flex items-center gap-1 text-amber-400 text-sm mb-3">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="text-sm text-slate-300 mb-4">"The physiology renal hemodynamics module saved me hours of confusing reading in Guyton. Absolutely essential."</p>
+                            <p class="text-xs font-bold text-white">— Sadia Afrin, Sir Salimullah Medical College</p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                            <div class="flex items-center gap-1 text-amber-400 text-sm mb-3">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="text-sm text-slate-300 mb-4">"The exam mock tests and manual bKash enrollment process were seamless. The interface feels just like Coursera!"</p>
+                            <p class="text-xs font-bold text-white">— Tanvir Hossain, Mymensingh Medical College</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            `;
+        }
+
+        /* --- COURSE CARD HELPER --- */
+        function renderCourseCard(course) {
+            const isFree = course.type === 'free';
+            const priceHtml = isFree ? 
+                `<span class="text-emerald-600 font-extrabold text-lg">FREE</span>` :
+                `<div class="flex items-center gap-2"><span class="text-slate-400 line-through text-xs">৳${course.price}</span><span class="text-primary font-extrabold text-lg">৳${course.discountPrice}</span></div>`;
+
+            return `
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition flex flex-col group">
+                <div class="h-48 bg-cover bg-center relative overflow-hidden" style="background-image: url('${course.thumbnail}');">
+                    <div class="absolute top-3 left-3 bg-navy/80 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        ${course.category}
+                    </div>
+                    <div class="absolute top-3 right-3 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        ${course.type}
+                    </div>
+                </div>
+                <div class="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-navy text-base mb-2 group-hover:text-primary transition line-clamp-2">${course.title}</h3>
+                        <p class="text-xs text-slate-500 line-clamp-2 mb-4">${course.description}</p>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-100 mb-4">
+                            <span class="text-xs font-medium text-slate-500"><i class="fa-solid fa-book mr-1 text-primary"></i> ${course.chapters.length} Modules</span>
+                            ${priceHtml}
+                        </div>
+                        <button onclick="handleCourseClick('${course.id}')" class="w-full py-3 bg-slate-100 hover:bg-primary hover:text-white text-navy font-bold text-xs rounded-xl transition">
+                            ${isFree ? 'Start Learning Now' : 'View Course & Enroll'}
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function handleCourseClick(courseId) {
+            const course = state.courses.find(c => c.id === courseId);
+            if (!course) return;
+            if (course.type === 'free') {
+                navigate('course-player', { courseId });
+            } else {
+                // Check if enrolled
+                const user = state.currentUser;
+                const isEnrolled = user && state.enrollments.some(e => e.userId === user.id && e.courseId === courseId && e.status === 'approved');
+                if (isEnrolled) {
+                    navigate('course-player', { courseId });
+                } else {
+                    openEnrollmentModal(course);
+                }
+            }
+        }
+
+        /* --- FREE CLASSES VIEW --- */
+        function renderFreeClassesView() {
+            const freeCourses = state.courses.filter(c => c.type === 'free' && c.isPublished);
+            return `
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+                <div class="mb-8">
+                    <span class="text-xs font-bold text-primary uppercase tracking-wider bg-purple-50 px-3 py-1 rounded-full">Zero Cost Access</span>
+                    <h1 class="text-3xl font-bold text-navy mt-2">Free MBBS Classes</h1>
+                    <p class="text-sm text-slate-500">Access high-yield lectures and notes without any payment required.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    ${freeCourses.map(c => renderCourseCard(c)).join('')}
+                </div>
+            </div>`;
+        }
+
+        /* --- PREMIUM COURSES VIEW --- */
+        function renderPremiumCoursesView() {
+            const premiumCourses = state.courses.filter(c => c.type === 'premium' && c.isPublished);
+            return `
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+                <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-primary uppercase tracking-wider bg-purple-50 px-3 py-1 rounded-full">Professional Mastery</span>
+                        <h1 class="text-3xl font-bold text-navy mt-2">Premium MBBS Courses</h1>
+                        <p class="text-sm text-slate-500">Unlock complete board exam preparation with bKash/Nagad manual verification.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    ${premiumCourses.map(c => renderCourseCard(c)).join('')}
+                </div>
+            </div>`;
+        }
+
+        /* --- EXAMINATION VIEW --- */
+        function renderExaminationView() {
+            const exams = state.examinations;
+            return `
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+                <div class="mb-8">
+                    <span class="text-xs font-bold text-primary uppercase tracking-wider bg-purple-50 px-3 py-1 rounded-full">Board Exam Prep</span>
+                    <h1 class="text-3xl font-bold text-navy mt-2">Medical Examinations & Mock Tests</h1>
+                    <p class="text-sm text-slate-500">Test your retention with timer-based MCQs and instant performance analytics.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${exams.map(ex => `
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-xs font-bold bg-purple-100 text-primary px-3 py-1 rounded-full">Mock Test</span>
+                                    <span class="text-xs text-slate-500"><i class="fa-solid fa-clock mr-1"></i> ${ex.durationMinutes} Minutes</span>
+                                </div>
+                                <h3 class="font-bold text-navy text-lg mb-2">${ex.title}</h3>
+                                <p class="text-xs text-slate-500 mb-4">Total Questions: ${ex.questions.length} | Total Marks: ${ex.totalMarks} | Negative Marking: ${ex.negativeMarking}</p>
+                            </div>
+                            <button onclick="startExam('${ex.id}')" class="w-full py-3 bg-primary hover:bg-primaryHover text-white font-bold text-xs rounded-xl shadow-lg shadow-primary/30 transition">
+                                Start Examination Now
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+
+        function startExam(examId) {
+            if (!state.currentUser) {
+                showToast('Please log in as a student to take examinations.', 'error');
+                navigate('login');
+                return;
+            }
+            navigate('exam-runner', { examId });
+        }
+
+        /* --- ABOUT US VIEW --- */
+        function renderAboutView() {
+            return `
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+                <div class="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-sm space-y-8">
+                    <div class="text-center max-w-2xl mx-auto">
+                        <span class="text-xs font-bold text-primary uppercase tracking-wider bg-purple-50 px-3 py-1 rounded-full">Our Story</span>
+                        <h1 class="text-3xl sm:text-4xl font-extrabold text-navy mt-3">Making the Hardest Journey a Little Easier.</h1>
+                        <p class="text-sm text-slate-500 mt-3">Sohag Bhai MBBS Classes was founded with a singular mission: to distill complex medical textbooks into high-yield, understandable clinical concepts for future doctors.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100">
+                        <div class="text-center p-6 bg-slate-50 rounded-2xl">
+                            <div class="w-12 h-12 rounded-xl bg-purple-100 text-primary flex items-center justify-center mx-auto text-xl mb-4 font-bold"><i class="fa-solid fa-bullseye"></i></div>
+                            <h4 class="font-bold text-navy mb-2">High-Yield Focus</h4>
+                            <p class="text-xs text-slate-500">We cut through dense textbook fluff to focus strictly on board exam essentials.</p>
+                        </div>
+                        <div class="text-center p-6 bg-slate-50 rounded-2xl">
+                            <div class="w-12 h-12 rounded-xl bg-purple-100 text-primary flex items-center justify-center mx-auto text-xl mb-4 font-bold"><i class="fa-solid fa-user-doctor"></i></div>
+                            <h4 class="font-bold text-navy mb-2">Expert Mentorship</h4>
+                            <p class="text-xs text-slate-500">Led by Dr. Sohag Bhai and experienced clinical specialists.</p>
+                        </div>
+                        <div class="text-center p-6 bg-slate-50 rounded-2xl">
+                            <div class="w-12 h-12 rounded-xl bg-purple-100 text-primary flex items-center justify-center mx-auto text-xl mb-4 font-bold"><i class="fa-solid fa-heart"></i></div>
+                            <h4 class="font-bold text-navy mb-2">Student Community</h4>
+                            <p class="text-xs text-slate-500">Supporting over 1,400+ medical students across Bangladesh.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        /* --- CONTACT US VIEW --- */
+        function renderContactView() {
+            return `
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+                <div class="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div>
+                        <span class="text-xs font-bold text-primary uppercase tracking-wider bg-purple-50 px-3 py-1 rounded-full">Get in Touch</span>
+                        <h1 class="text-3xl font-extrabold text-navy mt-3 mb-4">Contact Our Support Team</h1>
+                        <p class="text-sm text-slate-500 mb-6">Have questions regarding bKash/Nagad payments or course enrollment? Reach out to us directly.</p>
+                        <div class="space-y-4 text-sm text-slate-600">
+                            <div class="flex items-center gap-3"><i class="fa-solid fa-phone text-primary"></i><span>+880 1938-384761</span></div>
+                            <div class="flex items-center gap-3"><i class="fa-solid fa-envelope text-primary"></i><span>support@sohagmbbs.com</span></div>
+                            <div class="flex items-center gap-3"><i class="fa-solid fa-location-dot text-primary"></i><span>Dhaka Medical College Area, Dhaka, Bangladesh</span></div>
+                        </div>
+                    </div>
+                    <form onsubmit="handleContactSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Your Name</label>
+                            <input type="text" id="contact-name" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email Address</label>
+                            <input type="email" id="contact-email" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Message</label>
+                            <textarea id="contact-msg" rows="4" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary"></textarea>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-primary hover:bg-primaryHover text-white font-bold text-sm rounded-xl shadow-lg shadow-primary/30 transition">
+                            Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>`;
+        }
+
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            showToast('Thank you! Your message has been sent to support.', 'success');
+            e.target.reset();
+        }
+
+        /* --- STUDENT LOGIN VIEW --- */
+        function renderLoginView() {
+            return `
+            <div class="min-h-screen flex items-center justify-center bg-slate-100 px-4 py-12">
+                <div class="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl border border-slate-200">
+                    <div class="text-center mb-8">
+                        <div class="w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center mx-auto text-2xl shadow-lg shadow-primary/30 mb-4">
+                            <i class="fa-solid fa-stethoscope"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-navy">Student Login</h2>
+                        <p class="text-xs text-slate-500 mt-1">Welcome back to Sohag Bhai MBBS Classes</p>
+                    </div>
+                    <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email Address</label>
+                            <input type="email" id="login-email" value="student@mbbs.com" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
+                            <input type="password" id="login-pass" value="password" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-primary hover:bg-primaryHover text-white font-bold text-sm rounded-xl shadow-lg shadow-primary/30 transition">
+                            Sign In
+                        </button>
+                    </form>
+                    <div class="text-center mt-6 text-xs text-slate-500">
+                        Don't have an account? <a href="#" onclick="navigate('register'); return false;" class="text-primary font-bold hover:underline">Register here</a>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="navigate('home'); return false;" class="text-slate-400 hover:text-navy text-xs">← Back to Home</a>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const user = state.users.find(u => u.email === email);
+            if (user) {
+                state.currentUser = user;
+                saveState();
+                showToast(`Welcome back, ${user.name}!`, 'success');
+                navigate(user.role === 'admin' ? 'admin-dashboard' : 'student-dashboard');
+            } else {
+                showToast('Invalid email address.', 'error');
+            }
+        }
+
+        /* --- STUDENT REGISTRATION VIEW --- */
+        function renderRegisterView() {
+            return `
+            <div class="min-h-screen flex items-center justify-center bg-slate-100 px-4 py-12">
+                <div class="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl border border-slate-200">
+                    <div class="text-center mb-8">
+                        <div class="w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center mx-auto text-2xl shadow-lg shadow-primary/30 mb-4">
+                            <i class="fa-solid fa-stethoscope"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-navy">Student Registration</h2>
+                        <p class="text-xs text-slate-500 mt-1">Join the premier MBBS learning community</p>
+                    </div>
+                    <form onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Full Name</label>
+                            <input type="text" id="reg-name" placeholder="Dr. John Doe" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email Address</label>
+                            <input type="email" id="reg-email" placeholder="student@college.com" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Medical College</label>
+                            <input type="text" id="reg-college" placeholder="Dhaka Medical College" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">MBBS Batch</label>
+                                <input type="text" id="reg-batch" placeholder="K-75" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Academic Year</label>
+                                <select id="reg-year" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option>1st Year</option>
+                                    <option>2nd Year</option>
+                                    <option>3rd Year</option>
+                                    <option>4th Year</option>
+                                    <option selected>Final Year</option>
+                                    <option>Intern Doctor</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-primary hover:bg-primaryHover text-white font-bold text-sm rounded-xl shadow-lg shadow-primary/30 transition">
+                            Create Account
+                        </button>
+                    </form>
+                    <div class="text-center mt-6 text-xs text-slate-500">
+                        Already have an account? <a href="#" onclick="navigate('login'); return false;" class="text-primary font-bold hover:underline">Login here</a>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const college = document.getElementById('reg-college').value;
+            const batch = document.getElementById('reg-batch').value;
+            const academicYear = document.getElementById('reg-year').value;
+
+            if (state.users.some(u => u.email === email)) {
+                showToast('Email already registered. Please login.', 'error');
+                return;
+            }
+
+            const newUser = { id: 'u_' + Date.now(), name, email, role: 'student', college, batch, academicYear };
+            state.users.push(newUser);
+            state.currentUser = newUser;
+            saveState();
+            showToast('Account successfully created!', 'success');
+            navigate('student-dashboard');
+        }
+
+        /* --- HIDDEN ADMIN LOGIN VIEW --- */
+        function renderAdminLoginView() {
+            return `
+            <div class="min-h-screen flex items-center justify-center bg-navy px-4 py-12">
+                <div class="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-200">
+                    <div class="text-center mb-8">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center mx-auto text-2xl shadow-lg shadow-amber-500/30 mb-4">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-navy">Admin Gateway</h2>
+                        <p class="text-xs text-slate-500 mt-1">Authorized Medical Faculty Access Only</p>
+                    </div>
+                    <form onsubmit="handleAdminLoginSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Admin Password</label>
+                            <div class="relative">
+                                <input type="password" id="admin-pass-input" placeholder="Enter security password" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary pr-12">
+                                <button type="button" onclick="toggleAdminPass()" class="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600">
+                                    <i id="admin-eye-icon" class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-navy hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-lg shadow-navy/30 transition">
+                            Unlock Admin Panel
+                        </button>
+                    </form>
+                    <div class="text-center mt-6">
+                        <a href="#" onclick="navigate('home'); return false;" class="text-slate-400 hover:text-navy text-xs">← Back to Public Website</a>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function toggleAdminPass() {
+            const input = document.getElementById('admin-pass-input');
+            const icon = document.getElementById('admin-eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        function handleAdminLoginSubmit(e) {
+            e.preventDefault();
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === '#MyCourseMBBS') {
+                const adminUser = state.users.find(u => u.role === 'admin') || { id: 'admin1', name: 'Dr. Sohag Bhai', email: 'sohag@mbbs.com', role: 'admin' };
+                state.currentUser = adminUser;
+                saveState();
+                showToast('Admin access granted successfully!', 'success');
+                navigate('admin-dashboard');
+            } else {
+                showToast('Incorrect password. Access denied.', 'error');
+            }
+        }
+
+        function handleLogout() {
+            state.currentUser = null;
+            saveState();
+            showToast('Logged out successfully.', 'info');
+            navigate('home');
+        }
+
+        /* ==========================================
+           5. STUDENT DASHBOARD (11 Sidebar items)
+           ========================================== */
+        function renderStudentDashboard() {
+            const user = state.currentUser;
+            if (!user) { navigate('login'); return ''; }
+
+            const tabs = [
+                { id: 'overview', label: 'Overview', icon: 'fa-chart-pie' },
+                { id: 'profile', label: 'My Profile', icon: 'fa-user' },
+                { id: 'free-classes', label: 'My Free Classes', icon: 'fa-video' },
+                { id: 'premium-courses', label: 'My Premium Courses', icon: 'fa-graduation-cap' },
+                { id: 'enrolled', label: 'My Enrolled Courses', icon: 'fa-book-open' },
+                { id: 'pending-requests', label: 'Pending Requests', icon: 'fa-clock' },
+                { id: 'payments', label: 'Payment History', icon: 'fa-receipt' },
+                { id: 'progress', label: 'Course Progress', icon: 'fa-chart-line' },
+                { id: 'notifications', label: 'Notifications', icon: 'fa-bell' },
+                { id: 'announcements', label: 'Announcements', icon: 'fa-bullhorn' }
+            ];
+
+            return `
+            <div class="min-h-screen flex flex-col lg:flex-row bg-slate-100">
+                <!-- Sidebar -->
+                <aside class="w-full lg:w-72 bg-white border-r border-slate-200 p-6 flex flex-col justify-between shrink-0">
+                    <div>
+                        <div class="flex items-center gap-3 mb-8 cursor-pointer" onclick="navigate('home')">
+                            <div class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center text-lg font-bold">
+                                <i class="fa-solid fa-stethoscope"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-navy text-sm">Student Portal</h3>
+                                <p class="text-[10px] text-slate-500">Sohag Bhai MBBS</p>
+                            </div>
+                        </div>
+                        <nav class="space-y-1">
+                            ${tabs.map(t => `
+                                <button onclick="state.activeTab='${t.id}'; renderApp();" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${state.activeTab===t.id?'bg-purple-50 text-primary font-semibold':'text-slate-600 hover:bg-slate-50'}">
+                                    <i class="fa-solid ${t.icon} w-5"></i><span>${t.label}</span>
+                                </button>
+                            `).join('')}
+                        </nav>
+                    </div>
+                    <div class="pt-6 border-t border-slate-100 mt-6">
+                        <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition">
+                            <i class="fa-solid fa-right-from-bracket w-5"></i><span>Logout</span>
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Main Content Area -->
+                <main class="flex-1 p-6 lg:p-10 overflow-y-auto">
+                    ${renderStudentDashboardContent()}
+                </main>
+            </div>`;
+        }
+
+        function renderStudentDashboardContent() {
+            const user = state.currentUser;
+            const tab = state.activeTab;
+
+            switch (tab) {
+                case 'overview':
+                    const enrolledCount = state.enrollments.filter(e => e.userId === user.id && e.status === 'approved').length;
+                    const pendingCount = state.payments.filter(p => p.userId === user.id && p.status === 'pending').length;
+                    return `
+                    <div class="space-y-8 animate-fade-in">
+                        <div>
+                            <h1 class="text-2xl font-bold text-navy">Welcome back, ${user.name}!</h1>
+                            <p class="text-sm text-slate-500">${user.college} | Batch: ${user.batch} | ${user.academicYear}</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <p class="text-xs text-slate-500 uppercase font-bold mb-1">Enrolled Courses</p>
+                                <p class="text-3xl font-extrabold text-primary">${enrolledCount}</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <p class="text-xs text-slate-500 uppercase font-bold mb-1">Pending Requests</p>
+                                <p class="text-3xl font-extrabold text-amber-500">${pendingCount}</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <p class="text-xs text-slate-500 uppercase font-bold mb-1">Exam Mock Average</p>
+                                <p class="text-3xl font-extrabold text-emerald-600">80%</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-navy mb-4">Quick Actions</h3>
+                            <div class="flex flex-wrap gap-4">
+                                <button onclick="navigate('premium-courses')" class="px-5 py-3 bg-primary text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/30">Browse Premium Courses</button>
+                                <button onclick="navigate('examination')" class="px-5 py-3 bg-navy text-white text-xs font-bold rounded-xl">Take Mock Examination</button>
+                            </div>
+                        </div>
+                    </div>`;
+
+                case 'profile':
+                    return `
+                    <div class="max-w-xl bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Edit Student Profile</h2>
+                        <form onsubmit="handleProfileUpdate(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Full Name</label>
+                                <input type="text" id="prof-name" value="${user.name}" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email Address</label>
+                                <input type="email" id="prof-email" value="${user.email}" disabled class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-400">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Medical College</label>
+                                <input type="text" id="prof-college" value="${user.college || ''}" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">MBBS Batch</label>
+                                    <input type="text" id="prof-batch" value="${user.batch || ''}" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Academic Year</label>
+                                    <select id="prof-year" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+                                        <option ${user.academicYear==='1st Year'?'selected':''}>1st Year</option>
+                                        <option ${user.academicYear==='2nd Year'?'selected':''}>2nd Year</option>
+                                        <option ${user.academicYear==='3rd Year'?'selected':''}>3rd Year</option>
+                                        <option ${user.academicYear==='4th Year'?'selected':''}>4th Year</option>
+                                        <option ${user.academicYear==='Final Year'?'selected':''}>Final Year</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-3.5 bg-primary text-white font-bold text-sm rounded-xl shadow-lg shadow-primary/30">Save Profile Changes</button>
+                        </form>
+                    </div>`;
+
+                case 'free-classes':
+                    const freeCourses = state.courses.filter(c => c.type === 'free' && c.isPublished);
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">My Free Classes</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${freeCourses.map(c => renderCourseCard(c)).join('')}
+                        </div>
+                    </div>`;
+
+                case 'premium-courses':
+                    const premCourses = state.courses.filter(c => c.type === 'premium' && c.isPublished);
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Available Premium Courses</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${premCourses.map(c => renderCourseCard(c)).join('')}
+                        </div>
+                    </div>`;
+
+                case 'enrolled':
+                    const enrolledCourseIds = state.enrollments.filter(e => e.userId === user.id && e.status === 'approved').map(e => e.courseId);
+                    const freeIds = state.courses.filter(c => c.type === 'free').map(c => c.id);
+                    const myCourses = state.courses.filter(c => enrolledCourseIds.includes(c.id) || freeIds.includes(c.id));
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">My Enrolled & Free Courses</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${myCourses.map(c => `
+                                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <span class="text-xs font-bold text-primary uppercase">${c.category}</span>
+                                        <h4 class="font-bold text-navy mt-1">${c.title}</h4>
+                                        <p class="text-xs text-slate-500 mt-1">${c.chapters.length} Modules</p>
+                                    </div>
+                                    <button onclick="navigate('course-player', { courseId: '${c.id}' })" class="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl shadow-md">
+                                        Continue Learning
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+
+                case 'pending-requests':
+                    const myPending = state.payments.filter(p => p.userId === user.id);
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Pending Enrollment & Payment Requests</h2>
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="p-4">Course</th>
+                                        <th class="p-4">Method</th>
+                                        <th class="p-4">Trx ID</th>
+                                        <th class="p-4">Amount</th>
+                                        <th class="p-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    ${myPending.map(p => `
+                                        <tr>
+                                            <td class="p-4 font-bold text-navy">${p.courseName}</td>
+                                            <td class="p-4">${p.method} (${p.senderNumber})</td>
+                                            <td class="p-4 font-mono text-xs">${p.trxId}</td>
+                                            <td class="p-4">৳${p.amount}</td>
+                                            <td class="p-4">
+                                                <span class="px-3 py-1 rounded-full text-xs font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-rose-100 text-rose-700':'bg-amber-100 text-amber-700'}">
+                                                    ${p.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+
+                case 'payments':
+                    const myPayments = state.payments.filter(p => p.userId === user.id);
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Payment History</h2>
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="p-4">Date</th>
+                                        <th class="p-4">Course</th>
+                                        <th class="p-4">Trx ID</th>
+                                        <th class="p-4">Amount</th>
+                                        <th class="p-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    ${myPayments.map(p => `
+                                        <tr>
+                                            <td class="p-4 text-xs text-slate-500">${p.date}</td>
+                                            <td class="p-4 font-bold text-navy">${p.courseName}</td>
+                                            <td class="p-4 font-mono text-xs">${p.trxId}</td>
+                                            <td class="p-4">৳${p.amount}</td>
+                                            <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-rose-100 text-rose-700':'bg-amber-100 text-amber-700'}">${p.status}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+
+                case 'progress':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Course Learning Progress</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm font-bold text-navy mb-1">
+                                    <span>Mastering Clinical Anatomy</span>
+                                    <span>75% Completed</span>
+                                </div>
+                                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary w-3/4"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm font-bold text-navy mb-1">
+                                    <span>Complete Physiology Part-1</span>
+                                    <span>40% Completed</span>
+                                </div>
+                                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary w-2/5"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                case 'notifications':
+                    const myNotifs = state.notifications.filter(n => n.userId === user.id);
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Notifications</h2>
+                        <div class="space-y-3">
+                            ${myNotifs.length === 0 ? '<p class="text-sm text-slate-400">No new notifications.</p>' : myNotifs.map(n => `
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-bold text-navy text-sm">${n.title}</h4>
+                                        <p class="text-xs text-slate-500 mt-1">${n.message}</p>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400">${n.date}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+
+                case 'announcements':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Announcements</h2>
+                        <div class="space-y-4">
+                            ${state.announcements.map(a => `
+                                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h4 class="font-bold text-navy">${a.title}</h4>
+                                        <span class="text-xs text-slate-400">${a.date}</span>
+                                    </div>
+                                    <p class="text-sm text-slate-600">${a.text}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+
+                default:
+                    return '';
+            }
+        }
+
+        function handleProfileUpdate(e) {
+            e.preventDefault();
+            const user = state.currentUser;
+            user.name = document.getElementById('prof-name').value;
+            user.college = document.getElementById('prof-college').value;
+            user.batch = document.getElementById('prof-batch').value;
+            user.academicYear = document.getElementById('prof-year').value;
+            saveState();
+            showToast('Profile updated successfully!', 'success');
+            renderApp();
+        }
+
+        /* ==========================================
+           6. COURSE PLAYER VIEW
+           ========================================== */
+        function renderCoursePlayerView() {
+            const courseId = state.selectedCourseId;
+            const course = state.courses.find(c => c.id === courseId);
+            if (!course) { navigate('home'); return ''; }
+
+            return `
+            <div class="min-h-screen flex flex-col bg-slate-900 text-white">
+                <!-- Player Header -->
+                <div class="h-16 bg-slate-950 border-b border-slate-800 px-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button onclick="navigate('home')" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-arrow-left mr-2"></i> Exit Player</button>
+                        <h2 class="font-bold text-sm text-slate-200 truncate max-w-md">${course.title}</h2>
+                    </div>
+                    <span class="text-xs bg-primary/20 text-primary px-3 py-1 rounded-full font-bold uppercase">${course.category}</span>
+                </div>
+
+                <!-- Player Workspace -->
+                <div class="flex-1 grid grid-cols-1 lg:grid-cols-12">
+                    <!-- Video & PDF Main Area -->
+                    <div class="lg:col-span-8 p-6 flex flex-col gap-6">
+                        <div class="w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative flex items-center justify-center">
+                            <video id="course-video-player" controls class="w-full h-full object-cover" src="https://www.w3schools.com/html/mov_bbb.mp4" poster="${course.thumbnail}"></video>
+                        </div>
+                        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+                            <h3 class="font-bold text-lg">Lecture Resources & PDFs</h3>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="showToast('Downloading PDF resource...', 'success')" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-semibold flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-file-pdf text-rose-400"></i> Download Lecture Notes (PDF)
+                                </button>
+                                <button onclick="showToast('High-yield diagrams downloaded!', 'success')" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-semibold flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-download text-primary"></i> High-Yield Summary Sheets
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Curriculum Sidebar -->
+                    <div class="lg:col-span-4 bg-slate-950 border-l border-slate-800 p-6 overflow-y-auto">
+                        <h3 class="font-bold text-sm uppercase tracking-wider text-slate-400 mb-4">Course Modules</h3>
+                        <div class="space-y-4">
+                            ${course.chapters.map((ch, idx) => `
+                                <div class="bg-slate-900 rounded-xl p-4 border border-slate-800">
+                                    <h4 class="font-bold text-sm text-slate-200 mb-2">${ch.title}</h4>
+                                    <div class="space-y-1">
+                                        ${ch.topics.map(t => `
+                                            <div onclick="document.getElementById('course-video-player').src='${t.videoUrl}'; showToast('Playing: ${t.title}', 'info');" class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800 text-xs text-slate-400 hover:text-white cursor-pointer transition">
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fa-solid fa-circle-play text-primary"></i>
+                                                    <span>${t.title}</span>
+                                                </div>
+                                                <span>${t.duration}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        /* ==========================================
+           7. EXAMINATION RUNNER VIEW
+           ========================================== */
+        let currentExamTimer = null;
+        let examTimeLeft = 900; // 15 mins
+
+        function renderExamRunnerView() {
+            const examId = state.selectedExamId;
+            const exam = state.examinations.find(e => e.id === examId);
+            if (!exam) { navigate('examination'); return ''; }
+
+            return `
+            <div class="min-h-screen bg-slate-100 flex flex-col">
+                <header class="bg-white border-b border-slate-200 py-4 px-6 flex items-center justify-between sticky top-0 z-30">
+                    <div>
+                        <h2 class="font-bold text-navy text-base">${exam.title}</h2>
+                        <p class="text-xs text-slate-500">Answer all questions carefully. Negative marking applies.</p>
+                    </div>
+                    <div id="exam-timer-display" class="bg-purple-50 text-primary font-bold px-4 py-2 rounded-xl text-sm">
+                        <i class="fa-solid fa-clock mr-1"></i> 15:00
+                    </div>
+                </header>
+                <main class="max-w-4xl mx-auto px-4 py-8 w-full space-y-6">
+                    <form id="exam-form" onsubmit="submitExamAnswers(event, '${exam.id}')" class="space-y-6">
+                        ${exam.questions.map((q, idx) => `
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                                <h4 class="font-bold text-navy text-sm">Q${idx+1}. ${q.text} <span class="text-xs text-slate-400 font-normal">(${q.marks} Marks)</span></h4>
+                                <div class="space-y-2">
+                                    ${q.options.map((opt, oIdx) => `
+                                        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-purple-50/50 cursor-pointer transition text-sm">
+                                            <input type="radio" name="q_${q.id}" value="${oIdx}" required class="text-primary focus:ring-primary">
+                                            <span>${opt}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                        <button type="submit" class="w-full py-4 bg-primary hover:bg-primaryHover text-white font-bold rounded-2xl shadow-xl shadow-primary/30 transition">
+                            Submit Examination
+                        </button>
+                    </form>
+                </main>
+            </div>`;
+        }
+
+        function submitExamAnswers(e, examId) {
+            e.preventDefault();
+            const exam = state.examinations.find(ex => ex.id === examId);
+            let score = 0;
+            let total = exam.totalMarks;
+
+            exam.questions.forEach(q => {
+                const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+                if (selected && parseInt(selected.value) === q.correctIndex) {
+                    score += q.marks;
+                } else if (selected) {
+                    score -= (q.marks * exam.negativeMarking);
+                }
+            });
+
+            score = Math.max(0, score);
+            const percentage = Math.round((score / total) * 100);
+
+            state.examResults.push({
+                id: 'er_' + Date.now(),
+                userId: state.currentUser.id,
+                examId,
+                score,
+                totalMarks: total,
+                percentage,
+                date: new Date().toISOString().split('T')[0]
+            });
+            saveState();
+
+            showConfirm('Examination Submitted!', `Your Score: ${score}/${total} (${percentage}%). View details in your dashboard.`, () => {
+                navigate('student-dashboard', { tab: 'overview' });
+            });
+        }
+
+        /* ==========================================
+           8. ENROLLMENT & PAYMENT MODAL
+           ========================================== */
+        let modalCourseToEnroll = null;
+
+        function openEnrollmentModal(course) {
+            if (!state.currentUser) {
+                showToast('Please log in as a student to enroll in premium courses.', 'error');
+                navigate('login');
+                return;
+            }
+            modalCourseToEnroll = course;
+            
+            // Create modal DOM if not exists or populate
+            const modalHTML = `
+            <div id="enroll-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl animate-fade-in space-y-6 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-primary uppercase tracking-wider">Manual Payment Verification</span>
+                            <h3 class="font-bold text-navy text-xl mt-1">${course.title}</h3>
+                        </div>
+                        <button onclick="document.getElementById('enroll-modal').remove()" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 text-xs text-slate-700">
+                        <p class="font-bold text-primary">Payment Instructions:</p>
+                        <p>Send course fee to bKash or Nagad merchant/personal numbers below, then submit your transaction ID.</p>
+                        <div class="grid grid-cols-2 gap-2 pt-2 font-mono font-bold text-navy">
+                            <div class="bg-white p-2.5 rounded-xl border border-purple-200">bKash: ${state.siteSettings.bkashNumber}</div>
+                            <div class="bg-white p-2.5 rounded-xl border border-purple-200">Nagad: ${state.siteSettings.nagadNumber}</div>
+                        </div>
+                    </div>
+
+                    <form onsubmit="handlePaymentSubmission(event, '${course.id}')" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Payment Method</label>
+                            <select id="pay-method" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+                                <option value="bKash">bKash</option>
+                                <option value="Nagad">Nagad</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sender Mobile Number</label>
+                            <input type="text" id="pay-sender" placeholder="017xxxxxxxx" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Transaction ID (TrxID)</label>
+                            <input type="text" id="pay-trx" placeholder="e.g. 9N87654321" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Coupon Code (Optional)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="pay-coupon" placeholder="e.g. SOBUG10" class="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary uppercase">
+                                <button type="button" onclick="applyCouponPreview(${course.discountPrice})" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded-xl">Apply</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <span class="text-sm font-medium text-slate-500">Total Amount:</span>
+                            <span id="modal-total-price" class="text-2xl font-extrabold text-primary">৳${course.discountPrice}</span>
+                        </div>
+                        <button type="submit" class="w-full py-4 bg-primary hover:bg-primaryHover text-white font-bold text-sm rounded-xl shadow-lg shadow-primary/30 transition">
+                            Submit Payment Request
+                        </button>
+                    </form>
+                </div>
+            </div>`;
+            const div = document.createElement('div');
+            div.innerHTML = modalHTML;
+            document.body.appendChild(div.firstElementChild);
+        }
+
+        let appliedDiscountAmount = 0;
+        function applyCouponPreview(originalPrice) {
+            const codeInput = document.getElementById('pay-coupon').value.trim().toUpperCase();
+            const coupon = state.coupons.find(c => c.code === codeInput && c.enabled);
+            if (!coupon) {
+                showToast('Invalid or expired coupon code.', 'error');
+                return;
+            }
+            if (coupon.discountType === 'percentage') {
+                appliedDiscountAmount = (originalPrice * coupon.discountValue) / 100;
+            } else {
+                appliedDiscountAmount = coupon.discountValue;
+            }
+            const finalPrice = Math.max(0, originalPrice - appliedDiscountAmount);
+            document.getElementById('modal-total-price').textContent = `৳${finalPrice}`;
+            showToast(`Coupon applied! Discount: ৳${appliedDiscountAmount}`, 'success');
+        }
+
+        function handlePaymentSubmission(e, courseId) {
+            e.preventDefault();
+            const course = state.courses.find(c => c.id === courseId);
+            const method = document.getElementById('pay-method').value;
+            const senderNumber = document.getElementById('pay-sender').value;
+            const trxId = document.getElementById('pay-trx').value;
+            const couponCode = document.getElementById('pay-coupon').value;
+            const finalAmount = Math.max(0, course.discountPrice - appliedDiscountAmount);
+
+            state.payments.push({
+                id: 'pay_' + Date.now(),
+                userId: state.currentUser.id,
+                courseId: course.id,
+                courseName: course.title,
+                method,
+                senderNumber,
+                trxId,
+                date: new Date().toISOString().split('T')[0],
+                coupon: couponCode,
+                amount: finalAmount,
+                status: 'pending'
+            });
+            saveState();
+
+            document.getElementById('enroll-modal').remove();
+            showToast('Payment request submitted successfully! Pending admin approval.', 'success');
+            navigate('student-dashboard', { tab: 'pending-requests' });
+        }
+
+        /* ==========================================
+           9. ADMIN PANEL (18 Comprehensive Items)
+           ========================================== */
+        function renderAdminDashboard() {
+            const user = state.currentUser;
+            if (!user || user.role !== 'admin') { navigate('admin-login'); return ''; }
+
+            const adminTabs = [
+                { id: 'overview', label: 'Overview', icon: 'fa-chart-pie' },
+                { id: 'students', label: 'Student Management', icon: 'fa-users' },
+                { id: 'courses', label: 'Course Management', icon: 'fa-graduation-cap' },
+                { id: 'free-classes', label: 'Free Class Management', icon: 'fa-video' },
+                { id: 'premium-courses', label: 'Premium Course Mgmt', icon: 'fa-star' },
+                { id: 'enrollments', label: 'Enrollment Management', icon: 'fa-clipboard-check' },
+                { id: 'payments', label: 'Payment Verification', icon: 'fa-receipt' },
+                { id: 'revenue', label: 'Revenue Management', icon: 'fa-wallet' },
+                { id: 'coupons', label: 'Coupon Management', icon: 'fa-ticket' },
+                { id: 'categories', label: 'Subject & Categories', icon: 'fa-tags' },
+                { id: 'examinations', label: 'Examination Management', icon: 'fa-file-lines' },
+                { id: 'comments', label: 'Comments & Moderation', icon: 'fa-comments' },
+                { id: 'announcements', label: 'Announcements', icon: 'fa-bullhorn' },
+                { id: 'notifications', label: 'Notifications', icon: 'fa-bell' },
+                { id: 'reports', label: 'Reports & Analytics', icon: 'fa-chart-line' },
+                { id: 'settings', label: 'Website Settings', icon: 'fa-gears' },
+                { id: 'admin-profile', label: 'Admin Profile', icon: 'fa-user-shield' }
+            ];
+
+            return `
+            <div class="min-h-screen flex flex-col lg:flex-row bg-slate-100">
+                <!-- Admin Sidebar -->
+                <aside class="w-full lg:w-72 bg-navy text-white p-6 flex flex-col justify-between shrink-0">
+                    <div>
+                        <div class="flex items-center gap-3 mb-8 cursor-pointer" onclick="navigate('home')">
+                            <div class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center text-lg font-bold">
+                                <i class="fa-solid fa-stethoscope"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm">Admin Portal</h3>
+                                <p class="text-[10px] text-purple-300">Sohag Bhai MBBS</p>
+                            </div>
+                        </div>
+                        <nav class="space-y-1 max-h-[calc(100vh-220px)] overflow-y-auto custom-scrollbar pr-2">
+                            ${adminTabs.map(t => `
+                                <button onclick="state.activeTab='${t.id}'; renderApp();" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${state.activeTab===t.id?'bg-primary text-white font-semibold':'text-slate-300 hover:bg-white/5'}">
+                                    <i class="fa-solid ${t.icon} w-5"></i><span>${t.label}</span>
+                                </button>
+                            `).join('')}
+                        </nav>
+                    </div>
+                    <div class="pt-6 border-t border-slate-800 mt-6">
+                        <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition">
+                            <i class="fa-solid fa-right-from-bracket w-5"></i><span>Logout Admin</span>
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Admin Main Content Area -->
+                <main class="flex-1 p-6 lg:p-10 overflow-y-auto">
+                    ${renderAdminDashboardContent()}
+                </main>
+            </div>`;
+        }
+
+        function renderAdminDashboardContent() {
+            const tab = state.activeTab;
+
+            switch (tab) {
+                case 'overview':
+                    const totalStudents = state.users.filter(u => u.role === 'student').length;
+                    const totalCourses = state.courses.length;
+                    const pendingPays = state.payments.filter(p => p.status === 'pending').length;
+                    const approvedPays = state.payments.filter(p => p.status === 'approved');
+                    const totalRev = approvedPays.reduce((acc, p) => acc + p.amount, 0);
+
+                    return `
+                    <div class="space-y-8 animate-fade-in">
+                        <div>
+                            <h1 class="text-2xl font-bold text-navy">Admin Overview Dashboard</h1>
+                            <p class="text-sm text-slate-500">Live platform metrics and real-time statistics</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <p class="text-xs text-slate-500 uppercase font-bold mb-1">Total Students</p>
+                                <p class="text-3xl font-extrabold text-navy">${totalStudents}</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <p class="text-xs text-slate-500 uppercase font-bold mb-1">Total Courses</p>
+                                <p class="text-3xl font-extrabold text-primary">${totalCourses}</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <p class="text-xs text-slate-500 uppercase font-bold mb-1">Pending Payments</p>
+                                <p class="text-3xl font-extrabold text-amber-500">${pendingPays}</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <p class="text-xs text-slate-500 uppercase font-bold mb-1">Total Revenue</p>
+                                <p class="text-3xl font-extrabold text-emerald-600">৳${totalRev.toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <!-- Chart Section -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-navy mb-4">Monthly Revenue & Enrollment Growth</h3>
+                            <canvas id="adminRevenueChart" height="100"></canvas>
+                        </div>
+                    </div>`;
+
+                case 'students':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-navy">Student Management</h2>
+                            <button onclick="showToast('Feature enabled: Search students using table filter', 'info')" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl">Export Students</button>
+                        </div>
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="p-4">Name</th>
+                                        <th class="p-4">Email</th>
+                                        <th class="p-4">College</th>
+                                        <th class="p-4">Batch / Year</th>
+                                        <th class="p-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    ${state.users.filter(u => u.role === 'student').map(u => `
+                                        <tr>
+                                            <td class="p-4 font-bold text-navy">${u.name}</td>
+                                            <td class="p-4 text-slate-500">${u.email}</td>
+                                            <td class="p-4">${u.college || 'N/A'}</td>
+                                            <td class="p-4">${u.batch || ''} (${u.academicYear || ''})</td>
+                                            <td class="p-4 flex gap-2">
+                                                <button onclick="showConfirm('Suspend Student', 'Are you sure you want to suspend ${u.name}?', () => showToast('Student suspended', 'success'))" class="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold">Suspend</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+
+                case 'courses':
+                case 'premium-courses':
+                case 'free-classes':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-navy">Course Management</h2>
+                            <button onclick="openAddCourseModal()" class="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/30">+ Add New Course</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${state.courses.map(c => `
+                                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <span class="text-xs font-bold bg-purple-100 text-primary px-3 py-1 rounded-full uppercase">${c.type}</span>
+                                        <h4 class="font-bold text-navy text-base mt-2">${c.title}</h4>
+                                        <p class="text-xs text-slate-500 mt-1">Category: ${c.category} | Modules: ${c.chapters.length}</p>
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <button onclick="deleteCourse('${c.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold">Delete</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+
+                case 'enrollments':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Enrollment Management</h2>
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="p-4">Student ID</th>
+                                        <th class="p-4">Course ID</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    ${state.enrollments.map(en => `
+                                        <tr>
+                                            <td class="p-4 font-mono text-xs">${en.userId}</td>
+                                            <td class="p-4 font-mono text-xs">${en.courseId}</td>
+                                            <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">${en.status}</span></td>
+                                            <td class="p-4 text-xs text-slate-500">${en.enrolledAt}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+
+                case 'payments':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Payment Verification (bKash & Nagad)</h2>
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="p-4">Course</th>
+                                        <th class="p-4">Method & Sender</th>
+                                        <th class="p-4">TrxID</th>
+                                        <th class="p-4">Amount</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    ${state.payments.map(p => `
+                                        <tr>
+                                            <td class="p-4 font-bold text-navy">${p.courseName}</td>
+                                            <td class="p-4">${p.method}<br><span class="text-xs text-slate-400">${p.senderNumber}</span></td>
+                                            <td class="p-4 font-mono text-xs font-bold">${p.trxId}</td>
+                                            <td class="p-4">৳${p.amount}</td>
+                                            <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-rose-100 text-rose-700':'bg-amber-100 text-amber-700'}">${p.status}</span></td>
+                                            <td class="p-4 flex gap-2">
+                                                ${p.status === 'pending' ? `
+                                                    <button onclick="approvePayment('${p.id}')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold">Approve</button>
+                                                    <button onclick="rejectPayment('${p.id}')" class="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-bold">Reject</button>
+                                                ` : '<span class="text-xs text-slate-400">Processed</span>'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+
+                case 'revenue':
+                    const approved = state.payments.filter(p => p.status === 'approved');
+                    const revTotal = approved.reduce((acc, p) => acc + p.amount, 0);
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-navy">Revenue Management</h2>
+                            <button onclick="showToast('CSV Export generated successfully!', 'success')" class="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl">Export CSV</button>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 uppercase font-bold">Total Approved Revenue</p>
+                                <p class="text-4xl font-extrabold text-emerald-600 mt-1">৳${revTotal.toLocaleString()}</p>
+                            </div>
+                            <span class="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold">${approved.length} Transactions Approved</span>
+                        </div>
+                    </div>`;
+
+                case 'coupons':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-navy">Coupon Management</h2>
+                            <button onclick="openAddCouponModal()" class="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl">+ Create Coupon</button>
+                        </div>
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="p-4">Code</th>
+                                        <th class="p-4">Discount</th>
+                                        <th class="p-4">Usage Count</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    ${state.coupons.map(cp => `
+                                        <tr>
+                                            <td class="p-4 font-mono font-bold text-navy">${cp.code}</td>
+                                            <td class="p-4">${cp.discountType === 'percentage' ? cp.discountValue + '%' : '৳' + cp.discountValue}</td>
+                                            <td class="p-4">${cp.usedCount} / ${cp.usageLimit}</td>
+                                            <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${cp.enabled?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-600'}">${cp.enabled?'Active':'Disabled'}</span></td>
+                                            <td class="p-4"><button onclick="deleteCoupon('${cp.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold">Delete</button></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+
+                case 'categories':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Subject & Category Management</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex flex-wrap gap-2">
+                                ${state.categories.map(cat => `
+                                    <span class="px-4 py-2 bg-purple-50 text-primary font-bold rounded-xl text-xs flex items-center gap-2">
+                                        ${cat}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>`;
+
+                case 'examinations':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Examination Management</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-sm text-slate-500 mb-4">Manage mock tests, MCQ questions, and view student exam submissions.</p>
+                            <button onclick="showToast('Exam creation modal opened', 'info')" class="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl">+ Create New Examination</button>
+                        </div>
+                    </div>`;
+
+                case 'comments':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Comments & Student Moderation</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center py-12">
+                            <p class="text-slate-400 text-sm">No flagged comments or student queries requiring moderation.</p>
+                        </div>
+                    </div>`;
+
+                case 'announcements':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-navy">Announcements Management</h2>
+                            <button onclick="openAddAnnouncementModal()" class="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl">+ Post Announcement</button>
+                        </div>
+                        <div class="space-y-4">
+                            ${state.announcements.map(a => `
+                                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-bold text-navy">${a.title}</h4>
+                                        <p class="text-xs text-slate-500 mt-1">${a.text}</p>
+                                    </div>
+                                    <button onclick="deleteAnnouncement('${a.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold">Delete</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+
+                case 'notifications':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Broadcast Notifications</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <button onclick="showToast('Broadcast notification sent to all students!', 'success')" class="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl">Send Notification to All Students</button>
+                        </div>
+                    </div>`;
+
+                case 'reports':
+                    return `
+                    <div class="space-y-6 animate-fade-in">
+                        <h2 class="text-xl font-bold text-navy">Reports & Advanced Analytics</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-sm text-slate-500">Comprehensive CSV reports on student enrollments, course performance, and financial logs.</p>
+                        </div>
+                    </div>`;
+
+                case 'settings':
+                    return `
+                    <div class="space-y-6 animate-fade-in max-w-xl">
+                        <h2 class="text-xl font-bold text-navy">Website Settings & System Reset</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <h4 class="font-bold text-navy text-sm">Demo Data Reset Option</h4>
+                            <p class="text-xs text-slate-500">Restore all courses, mock data, and reset demo state to factory defaults.</p>
+                            <button onclick="resetDemoData()" class="px-4 py-3 bg-rose-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30">
+                                Reset Demo Data & Cache
+                            </button>
+                        </div>
+                    </div>`;
+
+                case 'admin-profile':
+                    return `
+                    <div class="space-y-6 animate-fade-in max-w-xl">
+                        <h2 class="text-xl font-bold text-navy">Admin Profile</h2>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Admin Name</label>
+                                <input type="text" value="Dr. Sohag Bhai" disabled class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email</label>
+                                <input type="text" value="sohag@mbbs.com" disabled class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                            </div>
+                        </div>
+                    </div>`;
+
+                default:
+                    return '';
+            }
+        }
+
+        /* --- ADMIN ACTIONS & MODALS --- */
+        function approvePayment(payId) {
+            const pay = state.payments.find(p => p.id === payId);
+            if (!pay) return;
+            pay.status = 'approved';
+
+            // Unlock course for user
+            state.enrollments.push({
+                id: 'en_' + Date.now(),
+                userId: pay.userId,
+                courseId: pay.courseId,
+                status: 'approved',
+                enrolledAt: new Date().toISOString().split('T')[0]
+            });
+
+            // Send notification
+            state.notifications.push({
+                id: 'nf_' + Date.now(),
+                userId: pay.userId,
+                title: 'Payment Approved!',
+                message: `Your payment for ${pay.courseName} has been verified and approved. Course unlocked!`,
+                date: new Date().toISOString().split('T')[0],
+                read: false
+            });
+
+            saveState();
+            showToast('Payment approved & course unlocked for student!', 'success');
+            renderApp();
+        }
+
+        function rejectPayment(payId) {
+            const pay = state.payments.find(p => p.id === payId);
+            if (!pay) return;
+            pay.status = 'rejected';
+            saveState();
+            showToast('Payment rejected.', 'error');
+            renderApp();
+        }
+
+        function deleteCourse(courseId) {
+            showConfirm('Delete Course', 'Are you sure you want to delete this course?', () => {
+                state.courses = state.courses.filter(c => c.id !== courseId);
+                saveState();
+                showToast('Course deleted successfully.', 'success');
+                renderApp();
+            });
+        }
+
+        function deleteCoupon(couponId) {
+            state.coupons = state.coupons.filter(c => c.id !== couponId);
+            saveState();
+            showToast('Coupon deleted.', 'success');
+            renderApp();
+        }
+
+        function deleteAnnouncement(annId) {
+            state.announcements = state.announcements.filter(a => a.id !== annId);
+            saveState();
+            showToast('Announcement deleted.', 'success');
+            renderApp();
+        }
+
+        function openAddCourseModal() {
+            const modalHTML = `
+            <div id="add-course-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl animate-fade-in space-y-6 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-navy text-xl">Add New Course</h3>
+                        <button onclick="document.getElementById('add-course-modal').remove()" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form onsubmit="handleCreateCourse(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Course Title</label>
+                            <input type="text" id="ac-title" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category</label>
+                            <select id="ac-cat" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white">
+                                ${state.categories.map(cat => `<option>${cat}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Course Type</label>
+                            <select id="ac-type" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white">
+                                <option value="free">Free</option>
+                                <option value="premium">Premium</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Original Price (৳)</label>
+                                <input type="number" id="ac-price" value="2500" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Discount Price (৳)</label>
+                                <input type="number" id="ac-disc" value="1800" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description</label>
+                            <textarea id="ac-desc" rows="3" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm"></textarea>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg">Publish Course</button>
+                    </form>
+                </div>
+            </div>`;
+            const div = document.createElement('div');
+            div.innerHTML = modalHTML;
+            document.body.appendChild(div.firstElementChild);
+        }
+
+        function handleCreateCourse(e) {
+            e.preventDefault();
+            const title = document.getElementById('ac-title').value;
+            const category = document.getElementById('ac-cat').value;
+            const type = document.getElementById('ac-type').value;
+            const price = parseFloat(document.getElementById('ac-price').value) || 0;
+            const discountPrice = parseFloat(document.getElementById('ac-disc').value) || 0;
+            const description = document.getElementById('ac-desc').value;
+
+            const newCourse = {
+                id: 'c_' + Date.now(),
+                title,
+                category,
+                type,
+                price,
+                discountPrice,
+                thumbnail: 'https://placehold.co/600x400/6C3CE9/FFFFFF?text=' + encodeURIComponent(category),
+                description,
+                isFeatured: true,
+                isPublished: true,
+                chapters: [
+                    {
+                        id: 'ch_' + Date.now(),
+                        title: 'Module 1: Introduction & Fundamentals',
+                        topics: [
+                            { id: 't_' + Date.now(), title: 'Orientation Lecture', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '20 mins', pdfName: 'Notes.pdf' }
+                        ]
+                    }
+                ],
+                announcements: []
+            };
+
+            state.courses.push(newCourse);
+            saveState();
+            document.getElementById('add-course-modal').remove();
+            showToast('Course created successfully and published to website!', 'success');
+            renderApp();
+        }
+
+        function openAddCouponModal() {
+            const modalHTML = `
+            <div id="add-coupon-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl animate-fade-in space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-navy text-xl">Create Coupon</h3>
+                        <button onclick="document.getElementById('add-coupon-modal').remove()" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form onsubmit="handleCreateCoupon(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Coupon Code</label>
+                            <input type="text" id="cp-code" placeholder="MBBS2026" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Discount Type</label>
+                            <select id="cp-type" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white">
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="fixed">Fixed Amount (৳)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Discount Value</label>
+                            <input type="number" id="cp-val" value="15" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm">
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg">Save Coupon</button>
+                    </form>
+                </div>
+            </div>`;
+            const div = document.createElement('div');
+            div.innerHTML = modalHTML;
+            document.body.appendChild(div.firstElementChild);
+        }
+
+        function handleCreateCoupon(e) {
+            e.preventDefault();
+            const code = document.getElementById('cp-code').value.toUpperCase();
+            const discountType = document.getElementById('cp-type').value;
+            const discountValue = parseFloat(document.getElementById('cp-val').value) || 0;
+
+            state.coupons.push({
+                id: 'cp_' + Date.now(),
+                code,
+                discountType,
+                discountValue,
+                expiryDate: '2026-12-31',
+                usageLimit: 100,
+                usedCount: 0,
+                enabled: true
+            });
+            saveState();
+            document.getElementById('add-coupon-modal').remove();
+            showToast('Coupon created successfully!', 'success');
+            renderApp();
+        }
+
+        function openAddAnnouncementModal() {
+            const modalHTML = `
+            <div id="add-ann-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl animate-fade-in space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-navy text-xl">Post Announcement</h3>
+                        <button onclick="document.getElementById('add-ann-modal').remove()" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form onsubmit="handleCreateAnnouncement(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Title</label>
+                            <input type="text" id="ann-title" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Announcement Text</label>
+                            <textarea id="ann-text" rows="3" required class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm"></textarea>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg">Publish Announcement</button>
+                    </form>
+                </div>
+            </div>`;
+            const div = document.createElement('div');
+            div.innerHTML = modalHTML;
+            document.body.appendChild(div.firstElementChild);
+        }
+
+        function handleCreateAnnouncement(e) {
+            e.preventDefault();
+            const title = document.getElementById('ann-title').value;
+            const text = document.getElementById('ann-text').value;
+
+            state.announcements.unshift({
+                id: 'an_' + Date.now(),
+                title,
+                text,
+                date: new Date().toISOString().split('T')[0]
+            });
+            saveState();
+            document.getElementById('add-ann-modal').remove();
+            showToast('Announcement posted successfully!', 'success');
+            renderApp();
+        }
+
+        /* --- GLOBAL EVENT LISTENERS --- */
+        function attachGlobalEventListeners() {
+            const mobileBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileBtn && mobileMenu) {
+                mobileBtn.onclick = () => {
+                    mobileMenu.classList.toggle('hidden');
+                };
+            }
+
+            // Render Chart.js if canvas exists
+            const chartCanvas = document.getElementById('adminRevenueChart');
+            if (chartCanvas) {
+                new Chart(chartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+                        datasets: [{
+                            label: 'Monthly Revenue (৳)',
+                            data: [12500, 18400, 24000, 31000, 42000, 58000],
+                            backgroundColor: '#6C3CE9',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+
+        // Initial Boot
+        window.onload = function() {
+            renderApp();
+        };
+    </script>
+</body>
+</html>
